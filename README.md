@@ -2,14 +2,6 @@
 
 This project implements and analyzes the Ford-Fulkerson algorithm variations for solving maximum flow problems in source-sink networks. Four variations, including Shortest Augmenting Path (SAP), DFS-Like, Random DFS, and Maximum Capacity (Max Cap), are examined under different graph conditions.
 
-## Table of Contents
-- [Introduction](#introduction)
-- [Graph Generation](#graph-generation)
-- [Compilation](#compilation)
-- [Usage](#usage)
-- [Results and Analysis](#results-and-analysis)
-- [Conclusion](#conclusion)
-- [References](#references)
 
 ## Introduction
 
@@ -18,6 +10,13 @@ The project focuses on the Ford-Fulkerson algorithm variations, evaluating their
 ## Graph Generation
 
 The `GenerateSourceSinkGraph` class creates a random source-sink graph based on given parameters. It uses these parameters to generate random coordinates for vertices, create edges within the Euclidean distance threshold, and assign capacities to the edges. The generated graph is saved in a CSV file.
+
+## Ford Fulkerson Algorithms 
+
+The class FordFulkersonAlgorithmRunner, has all 4 algorithms variations to find augmenting paths in the normal Ford fulkerson algorithm.
+
+## CSV files   
+SourceSinkGraph1.csv : It is a csv file for the first values out of the 8 Simulation I simulations professor gave, Similarly SourceSinkGraph2.csv has it for second simulation variation of Simulation I. Finally SourceSinkGraph9.csv and SourceSinkGraph10.csv are the simulation values for Simulation II from the results I found in Simulation I.
 
 ## Compilation
 
@@ -36,18 +35,8 @@ java GenerateSourceSinkGraph
 java FordFulkersonAlgorithmRunner
 ```
 
-This will generate a source-sink graph CSV file and perform algorithm simulations.
+How to Run the Algorithm :
 
-## Results and Analysis
+There are total 2 files in the algorithm the first file is GenerateSourceSinkGraph and other is FordFulkersonAlgorithmRunner.
 
-The `FordFulkersonAlgorithmRunner` class reads the generated graph CSV file and executes the Ford-Fulkerson algorithm variations. The metrics, including paths, ML, MPL, and total edges, are printed for each algorithm. Results are displayed in a formatted table.
-
-## Conclusion
-
-The conclusion section provides insights into the strengths and weaknesses of each Ford-Fulkerson algorithm variation based on the analysis of performance metrics. Recommendations for choosing algorithms based on network characteristics are included.
-
-## References
-
-References for algorithm variations and analysis are documented within the source code.
-
-Feel free to customize this README according to your project structure and specific details. Adjust paths, commands, and additional instructions based on your requirements.
+First you should run the GenerateSourceSinkGraph with the values of n, r, and upperCap you want in the main method along with the csv file name you want the grpah to be stored in and then run the FordFulkersonAlgorithmRunner with the same csv file name in the readDataFromCsv method. Also if you want to check my readings from the prerecorded graph just change the file path in FordFulkersonAlgorithmRunner to that particular csv file name in the readDataFromCsv method.
