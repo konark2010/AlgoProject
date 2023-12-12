@@ -98,10 +98,13 @@ public class GenerateSourceSinkGraph {
 
     // Finds the node with the maximum distance (sink node) using topological sorting
     public static int getSinkNode(int n, Set<Edge> E, int source) {
+        @SuppressWarnings("unchecked")
         List<Integer>[] adjacencyList = new List[n];
+
         for (int i = 0; i < n; i++) {
             adjacencyList[i] = new ArrayList<>();
         }
+
         for (Edge edge : E) {
             adjacencyList[edge.u].add(edge.v);
         }
