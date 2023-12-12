@@ -1,11 +1,9 @@
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
 public class FordFulkersonAlgorithmRunner {
-
     static int V = 0,E=0;
     static int graph[][];
 
@@ -14,60 +12,84 @@ public class FordFulkersonAlgorithmRunner {
     static int N, upperCap;
     static float r;
 
+    private static class Vertex implements Comparable<Vertex> {
+        private int node;
+        private int capacity;
 
-    public void read_data_from_csv() {
-        String csvFile = "SourceSinkGraph.csv";
+        public Vertex(int vertex, int capacity) {
+            this.node = vertex;
+            this.capacity = capacity;
+        }
 
-        try(BufferedReader br = new BufferedReader(new FileReader(csvFile))){
-            String[] values = br.readLine().split(",");
-            int n = Integer.parseInt(values[1].trim());
-            V = Integer.parseInt(values[0].trim());
-            E = Integer.parseInt(values[1].trim());
+        @Override
+        public int compareTo(Vertex other) {
+            return Integer.compare(this.capacity, other.capacity);
+        }
+    }
+
+    //main method that reads data from the generated graph csv file and extracts necessary graph data
+    public void readDataFromCsv() {
+        String csvFile = "SourceSinkGraph10.csv";
+
+        try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
+            // Reads the first line to get the number of vertices and edges
+            String[] headerValues = br.readLine().split(",");
+            int numEdges = Integer.parseInt(headerValues[1].trim());
+            V = Integer.parseInt(headerValues[0].trim());
+            E = numEdges;
             graph = new int[V][V];
-            for(int i=0; i<n; i++){
-                values = br.readLine().split(",");
-                graph[Integer.parseInt(values[0].trim())][Integer.parseInt(values[3].trim())]= Integer.parseInt(values[6].trim());
+
+            // Reads edge information and populate the graph
+            for (int i = 0; i < numEdges; i++) {
+                String[] edgeValues = br.readLine().split(",");
+                int fromVertex = Integer.parseInt(edgeValues[0].trim());
+                int toVertex = Integer.parseInt(edgeValues[3].trim());
+                int capacity = Integer.parseInt(edgeValues[6].trim());
+                graph[fromVertex][toVertex] = capacity;
             }
-            values = br.readLine().split(",");
-            sourceNode = Integer.parseInt(values[0].trim());
-            sinkNode = Integer.parseInt(values[1].trim());
-            values = br.readLine().split(",");
-            N = Integer.parseInt(values[0].trim());
-            r = Float.parseFloat(values[1].trim());
-            upperCap = Integer.parseInt(values[2].trim());
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+
+            // Reads source and sink node information
+            String[] sourceSinkValues = br.readLine().split(",");
+            sourceNode = Integer.parseInt(sourceSinkValues[0].trim());
+            sinkNode = Integer.parseInt(sourceSinkValues[1].trim());
+
+            // Reads the last line for additional graph parameters
+            String[] parameterValues = br.readLine().split(",");
+            N = Integer.parseInt(parameterValues[0].trim());
+            r = Float.parseFloat(parameterValues[1].trim());
+            upperCap = Integer.parseInt(parameterValues[2].trim());
+        }
+        //catch block to handle exceptions occured
+        catch (IOException e) {
+            throw new RuntimeException("Error reading data from CSV", e);
         }
     }
 
 
-    private static int fordFulkerson_SAP(int graph[][], int s, int t){
+    // implementation of the ford fulkerson algorithm with SAP variation
+    private static int fordFulkersonSAPVariation(int graph[][], int s, int t){
         int u,v;
-
-        int rGraph[][] = new int[V][V];
+        int residualGraph[][] = new int[V][V];
 
         for(u=0;u<V;u++){
             for(v=0;v<V;v++){
-                rGraph[u][v] = graph[u][v];
+                residualGraph[u][v] = graph[u][v];
             }
         }
 
         int parent[] = new int[V];
-
-        int max_flow = 0;
-
+        int maxFlow = 0;
         int paths = 0;
         int totalPathLength = 0;
         int maxLength = -1;
 
-        while(dijkstra_SAP(rGraph,s,t,parent)){
+        // checks if there are any more augmenting paths
+        while(AugmentingPathCheckerSAPVariation(residualGraph,s,t,parent)){
             int pathLength = 0;
-            int path_flow = Integer.MAX_VALUE;
+            int pathFlow = Integer.MAX_VALUE;
             for(v=t; v!=s; v = parent[v]){
                 u = parent[v];
-                path_flow = Math.min(path_flow, rGraph[u][v]);
+                pathFlow = Math.min(pathFlow, residualGraph[u][v]);
                 pathLength++;
             }
 
@@ -77,48 +99,48 @@ public class FordFulkersonAlgorithmRunner {
 
             for(v = t; v != s; v=parent[v]){
                 u = parent[v];
-                rGraph[u][v] -= path_flow;
-                rGraph[v][u] += path_flow;
+                residualGraph[u][v] -= pathFlow;
+                residualGraph[v][u] += pathFlow;
             }
 
-            max_flow += path_flow;
+            maxFlow += pathFlow;
             totalPathLength += pathLength;
             paths++;
         }
 
+        // calculates the metrics of this method to print in the console table
         double meanLength = (double) totalPathLength / paths;
         double meanProportionalLength = (double) meanLength / maxLength;
 
-        printTableEntry("SAP", N, r, upperCap, paths, meanLength, meanProportionalLength, E);
+        printMetrics("SAP", N, r, upperCap, paths, meanLength, meanProportionalLength, E);
 
-        return max_flow;
+        return maxFlow;
     }
 
-    private static int fordFulkerson_DFS(int graph[][], int s, int t){
+    // implementation of the ford fulkerson algorithm with DFS variation
+    private static int fordFulkersonDFSLikeVariation(int graph[][], int s, int t){
         int u,v;
-
-        int rGraph[][] = new int[V][V];
+        int residualGraph[][] = new int[V][V];
 
         for(u=0;u<V;u++){
             for(v=0;v<V;v++){
-                rGraph[u][v] = graph[u][v];
+                residualGraph[u][v] = graph[u][v];
             }
         }
 
         int parent[] = new int[V];
-
-        int max_flow = 0;
-
+        int maxFlow = 0;
         int paths = 0;
         int totalPathLength = 0;
         int maxLength = -1;
 
-        while(dijkstra_DFS(rGraph,s,t,parent)){
+        // checks if there are any more augmenting paths
+        while(AugmentingPathCheckerDFSLikeVariation(residualGraph,s,t,parent)){
             int pathLength = 0;
-            int path_flow = Integer.MAX_VALUE;
+            int pathFlow = Integer.MAX_VALUE;
             for(v=t; v!=s; v = parent[v]){
                 u = parent[v];
-                path_flow = Math.min(path_flow, rGraph[u][v]);
+                pathFlow = Math.min(pathFlow, residualGraph[u][v]);
                 pathLength++;
             }
 
@@ -128,47 +150,48 @@ public class FordFulkersonAlgorithmRunner {
 
             for(v = t; v != s; v=parent[v]){
                 u = parent[v];
-                rGraph[u][v] -= path_flow;
-                rGraph[v][u] += path_flow;
+                residualGraph[u][v] -= pathFlow;
+                residualGraph[v][u] += pathFlow;
             }
 
-            max_flow += path_flow;
+            maxFlow += pathFlow;
             totalPathLength += pathLength;
             paths++;
         }
 
+        // calculates the metrics of this method to print in the console table
         double meanLength = (double) totalPathLength / paths;
         double meanProportionalLength = (double) meanLength / maxLength;
 
-        printTableEntry("DFS-Like", N, r, upperCap, paths, meanLength, meanProportionalLength, E);
-        return max_flow;
+        printMetrics("DFS-Like", N, r, upperCap, paths, meanLength, meanProportionalLength, E);
+
+        return maxFlow;
     }
 
-    private static int fordFulkerson_RandomDFS(int graph[][], int s, int t){
+    // implementation of the ford fulkerson algorithm with Random DFS variation
+    private static int fordFulkersonRandomDFSVariation(int graph[][], int s, int t){
         int u,v;
-
-        int rGraph[][] = new int[V][V];
+        int residualGraph[][] = new int[V][V];
 
         for(u=0;u<V;u++){
             for(v=0;v<V;v++){
-                rGraph[u][v] = graph[u][v];
+                residualGraph[u][v] = graph[u][v];
             }
         }
 
         int parent[] = new int[V];
-
-        int max_flow = 0;
-
+        int maxFlow = 0;
         int paths = 0;
         int totalPathLength = 0;
         int maxLength = -1;
 
-        while(dijkstra_RandomDFS(rGraph,s,t,parent)){
+        // checks if there are any more augmenting paths
+        while(AugmentingPathCheckerRandomDFSVariation(residualGraph,s,t,parent)){
             int pathLength = 0;
-            int path_flow = Integer.MAX_VALUE;
+            int pathFlow = Integer.MAX_VALUE;
             for(v=t; v!=s; v = parent[v]){
                 u = parent[v];
-                path_flow = Math.min(path_flow, rGraph[u][v]);
+                pathFlow = Math.min(pathFlow, residualGraph[u][v]);
                 pathLength++;
             }
 
@@ -178,47 +201,48 @@ public class FordFulkersonAlgorithmRunner {
 
             for(v = t; v != s; v=parent[v]){
                 u = parent[v];
-                rGraph[u][v] -= path_flow;
-                rGraph[v][u] += path_flow;
+                residualGraph[u][v] -= pathFlow;
+                residualGraph[v][u] += pathFlow;
             }
 
-            max_flow += path_flow;
+            maxFlow += pathFlow;
             totalPathLength += pathLength;
             paths++;
         }
 
+        // calculates the metrics of this method to print in the console table
         double meanLength = (double) totalPathLength / paths;
         double meanProportionalLength = (double) meanLength / maxLength;
 
-        printTableEntry("Random DFS", N, r, upperCap, paths, meanLength, meanProportionalLength, E);
-        return max_flow;
+        printMetrics("Random DFS", N, r, upperCap, paths, meanLength, meanProportionalLength, E);
+
+        return maxFlow;
     }
 
-    private static int fordFulkerson_MaxCap(int graph[][], int s, int t){
+    // implementation of the ford fulkerson algorithm with Max Cap variation
+    private static int fordFulkersonMaxCapVariation(int graph[][], int s, int t){
         int u,v;
-
-        int rGraph[][] = new int[V][V];
+        int residualGraph[][] = new int[V][V];
 
         for(u=0;u<V;u++){
             for(v=0;v<V;v++){
-                rGraph[u][v] = graph[u][v];
+                residualGraph[u][v] = graph[u][v];
             }
         }
 
         int parent[] = new int[V];
-
-        int max_flow = 0;
-
+        int maxFlow = 0;
         int paths = 0;
         int totalPathLength = 0;
         int maxLength = -1;
 
-        while(dijkstra_MaxCapacity(rGraph,s,t,parent)){
+        // checks if there are any more augmenting paths
+        while(AugmentingPathCheckerMaxCapacityVariation(residualGraph,s,t,parent)){
             int pathLength = 0;
-            int path_flow = Integer.MAX_VALUE;
+            int pathFlow = Integer.MAX_VALUE;
             for(v=t; v!=s; v = parent[v]){
                 u = parent[v];
-                path_flow = Math.min(path_flow, rGraph[u][v]);
+                pathFlow = Math.min(pathFlow, residualGraph[u][v]);
                 pathLength++;
             }
 
@@ -228,35 +252,38 @@ public class FordFulkersonAlgorithmRunner {
 
             for(v = t; v != s; v=parent[v]){
                 u = parent[v];
-                rGraph[u][v] -= path_flow;
-                rGraph[v][u] += path_flow;
+                residualGraph[u][v] -= pathFlow;
+                residualGraph[v][u] += pathFlow;
             }
 
-            max_flow += path_flow;
+            maxFlow += pathFlow;
             totalPathLength += pathLength;
             paths++;
         }
 
+        // calculates the metrics of this method to print in the console table
         double meanLength = (double) totalPathLength / paths;
         double meanProportionalLength = (double) meanLength / maxLength;
 
-        printTableEntry("Max Cap", N, r, upperCap, paths, meanLength, meanProportionalLength, E);
-        return max_flow;
+        printMetrics("Max Cap", N, r, upperCap, paths, meanLength, meanProportionalLength, E);
+
+        return maxFlow;
     }
 
-    private static boolean dijkstra_RandomDFS(int[][] graph, int sourceNode, int sinkNode, int[] parent) {
+    // returns a boolean for if augmenting path exists
+    private static boolean AugmentingPathCheckerRandomDFSVariation(int[][] graph, int sourceNode, int sinkNode, int[] parent) {
         int V = graph.length;
         int[] dist = new int[V];
         Arrays.fill(dist, Integer.MAX_VALUE);
 
-        PriorityQueue<Vertex> queue = new PriorityQueue<>();
-        queue.add(new Vertex(sourceNode, 0));
+        PriorityQueue<Vertex> minHeap = new PriorityQueue<>();
+        minHeap.add(new Vertex(sourceNode, 0));
         dist[sourceNode] = 0;
 
         boolean pathExists = false;
 
-        while (!queue.isEmpty()) {
-            Vertex currentNode = queue.poll();
+        while (!minHeap.isEmpty()) {
+            Vertex currentNode = minHeap.poll();
             int u = currentNode.node;
 
             if (u == sinkNode) {
@@ -269,7 +296,7 @@ public class FordFulkersonAlgorithmRunner {
                 if (graph[u][v] > 0 && dist[v] == Integer.MAX_VALUE) {
                     int distance = new Random().nextInt();
                     dist[v] = distance;
-                    queue.add(new Vertex(v, distance));
+                    minHeap.add(new Vertex(v, distance));
                     parent[v] = u; // Update the parent of vertex v
                 }
             }
@@ -278,19 +305,20 @@ public class FordFulkersonAlgorithmRunner {
         return pathExists;
     }
 
-    public static boolean dijkstra_MaxCapacity(int[][] graph, int sourceNode, int sinkNode, int[] parent) {
+    // returns a boolean for if augmenting path exists
+    public static boolean AugmentingPathCheckerMaxCapacityVariation(int[][] graph, int sourceNode, int sinkNode, int[] parent) {
         int V = graph.length;
         int[] dist = new int[V];
         Arrays.fill(dist, Integer.MIN_VALUE);
-        dist[sourceNode] = Integer.MAX_VALUE; // Initialize source with maximum capacity
+        dist[sourceNode] = Integer.MAX_VALUE;
 
-        PriorityQueue<Vertex> priorityQueue = new PriorityQueue<>(Comparator.comparingInt(node -> node.capacity));
-        priorityQueue.add(new Vertex(sourceNode, Integer.MAX_VALUE));
+        PriorityQueue<Vertex> meanHeap = new PriorityQueue<>(Comparator.comparingInt(node -> node.capacity));
+        meanHeap.add(new Vertex(sourceNode, Integer.MAX_VALUE));
 
         boolean pathExists = false;
 
-        while (!priorityQueue.isEmpty()) {
-            int u = priorityQueue.poll().node;
+        while (!meanHeap.isEmpty()) {
+            int u = meanHeap.poll().node;
 
             if (u == sinkNode) {
                 // Path from source to sink exists
@@ -306,7 +334,7 @@ public class FordFulkersonAlgorithmRunner {
 
                     if (minCapacity > dist[v]) {
                         dist[v] = minCapacity;
-                        priorityQueue.add(new Vertex(v, dist[v]));
+                        meanHeap.add(new Vertex(v, dist[v]));
                         parent[v] = u; // Update the parent of vertex v
                     }
                 }
@@ -317,17 +345,18 @@ public class FordFulkersonAlgorithmRunner {
         return pathExists;
     }
 
-    public static boolean dijkstra_SAP(int[][] graph, int sourceNode, int sinkNode, int[] parent) {
-        int[] dist = new int[graph.length];  // Use graph.length instead of V
+    // returns a boolean for if augmenting path exists
+    public static boolean AugmentingPathCheckerSAPVariation(int[][] graph, int sourceNode, int sinkNode, int[] parent) {
+        int[] dist = new int[graph.length];
         Arrays.fill(dist, Integer.MAX_VALUE);
 
-        PriorityQueue<Vertex> queue = new PriorityQueue<>();
-        queue.add(new Vertex(sourceNode, 0));
+        PriorityQueue<Vertex> minHeap = new PriorityQueue<>();
+        minHeap.add(new Vertex(sourceNode, 0));
         dist[sourceNode] = 0;
-        parent[sourceNode] = -1; // Set parent of source node to -1
+        parent[sourceNode] = -1;
 
-        while (!queue.isEmpty()) {
-            Vertex currentNode = queue.poll();
+        while (!minHeap.isEmpty()) {
+            Vertex currentNode = minHeap.poll();
             int u = currentNode.node;
 
             if (u == sinkNode) {
@@ -335,37 +364,37 @@ public class FordFulkersonAlgorithmRunner {
                 return true;
             }
 
-            for (int v = 0; v < graph.length; v++) {  // Use graph.length instead of V
+            for (int v = 0; v < graph.length; v++) {
                 if (graph[u][v] > 0) {
                     int newDistance = dist[u] + 1;
 
                     if (newDistance < dist[v]) {
                         dist[v] = newDistance;
-                        queue.add(new Vertex(v, newDistance));
+                        minHeap.add(new Vertex(v, newDistance));
                         parent[v] = u; // Update the parent of vertex v
                     }
                 }
             }
         }
-
         // No path from source to sink
         return false;
     }
 
-    public static boolean dijkstra_DFS(int[][] graph, int sourceNode, int sinkNode, int[] parent) {
+    // returns a boolean for if augmenting path exists
+    public static boolean AugmentingPathCheckerDFSLikeVariation(int[][] graph, int sourceNode, int sinkNode, int[] parent) {
         int V = graph.length;
         int[] dist = new int[V];
         Arrays.fill(dist, Integer.MAX_VALUE);
 
-        PriorityQueue<Vertex> queue = new PriorityQueue<>();
-        queue.add(new Vertex(sourceNode, 0));
+        PriorityQueue<Vertex> minHeap = new PriorityQueue<>();
+        minHeap.add(new Vertex(sourceNode, 0));
         dist[sourceNode] = 0;
         int decreasingCounter = 0;
 
         boolean pathExists = false;
 
-        while (!queue.isEmpty()) {
-            Vertex currentNode = queue.poll();
+        while (!minHeap.isEmpty()) {
+            Vertex currentNode = minHeap.poll();
             int u = currentNode.node;
 
             if (u == sinkNode) {
@@ -378,7 +407,7 @@ public class FordFulkersonAlgorithmRunner {
                 if (graph[u][v] > 0 && dist[v] == Integer.MAX_VALUE) {
                     decreasingCounter--;
                     dist[v] = decreasingCounter;
-                    queue.add(new Vertex(v, decreasingCounter));
+                    minHeap.add(new Vertex(v, decreasingCounter));
                     parent[v] = u; // Update the parent of vertex v
                 }
             }
@@ -387,44 +416,22 @@ public class FordFulkersonAlgorithmRunner {
         return pathExists;
     }
 
-
-
-
-
+    //prints all the obtained metrics from all the 4 variations of the ford fulkerson method
+    private static void printMetrics(String algorithm, int n, float r, int upperCap, int paths, double ml, double mpl, int totalEdges) {
+        System.out.printf("%-10s|%5d|%5.1f|%10d|%7d|%5.1f|%20.15f|%12d\n", algorithm, n, r, upperCap, paths, ml, mpl, totalEdges);
+    }
 
     public static void main(String[] args){
-        new FordFulkersonAlgorithmRunner().read_data_from_csv();
-        //  System.out.println(fordFulkerson(graph,sourceNode,sinkNode));
-
-        // System.out.println("Shortest Augmenting Path : ");
+        new FordFulkersonAlgorithmRunner().readDataFromCsv();
 
         System.out.println("Algorithm | n   | r   | upperCap | paths | ML  | MPL                 | total edges");
         System.out.println("----------|-----|-----|----------|-------|-----|---------------------|------------");
 
-        fordFulkerson_SAP(graph, sourceNode, sinkNode);
-        fordFulkerson_DFS(graph, sourceNode, sinkNode);
-        fordFulkerson_RandomDFS(graph, sourceNode, sinkNode);
-        fordFulkerson_MaxCap(graph, sourceNode, sinkNode);
+        fordFulkersonSAPVariation(graph, sourceNode, sinkNode);
+        fordFulkersonDFSLikeVariation(graph, sourceNode, sinkNode);
+        fordFulkersonRandomDFSVariation(graph, sourceNode, sinkNode);
+        fordFulkersonMaxCapVariation(graph, sourceNode, sinkNode);
 
-    }
-
-    private static void printTableEntry(String algorithm, int n, float r, int upperCap, int paths, double ml, double mpl, int totalEdges) {
-        System.out.printf("%-10s|%5d|%5.1f|%10d|%7d|%5.1f|%20.15f|%12d\n", algorithm, n, r, upperCap, paths, ml, mpl, totalEdges);
-    }
-
-    private static class Vertex implements Comparable<Vertex> {
-        private int node;
-        private int capacity;
-
-        public Vertex(int vertex, int capacity) {
-            this.node = vertex;
-            this.capacity = capacity;
-        }
-
-        @Override
-        public int compareTo(Vertex other) {
-            return Integer.compare(this.capacity, other.capacity);
-        }
     }
 
 }
