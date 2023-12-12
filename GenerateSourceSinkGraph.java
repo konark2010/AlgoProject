@@ -34,10 +34,6 @@ public class GenerateSourceSinkGraph {
     // Set to store edges
     public static Set<Edge> E;
 
-    // Graph parameters
-    public int n, upperCap;
-    public float r;
-
     // Generates the source-sink graph
     public static void sourceSinkGraphGenerator(int n, double r, int upperCap, String filePath) {
         // Step 1: Define a set of vertices V
@@ -106,7 +102,6 @@ public class GenerateSourceSinkGraph {
         for (int i = 0; i < n; i++) {
             adjacencyList[i] = new ArrayList<>();
         }
-
         for (Edge edge : E) {
             adjacencyList[edge.u].add(edge.v);
         }
